@@ -14,6 +14,12 @@ dependencies = [
   "pydantic-settings>=2.2",
   "pyjwt>=2.8",
   "arq>=0.25",
+  # Persistence (PostgreSQL). psycopg v3 sync driver — URL scheme
+  # postgresql+psycopg://. The engine is created lazily, so these are inert until
+  # DATABASE_URL is set (the app still runs on the in-memory store without them).
+  "sqlalchemy>=2.0.30",
+  "psycopg[binary]>=3.2",
+  "alembic>=1.13",
 ]
 
 [project.optional-dependencies]

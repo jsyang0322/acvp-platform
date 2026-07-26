@@ -64,3 +64,24 @@ app.include_router(validations.router, prefix=API_PREFIX, tags=["validations"])
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/health/db")
+def health_db() -> JSONResponse:
+    """Database readiness probe: 200 when Postgres is reachable, 503 otherwise.
+
+    Separate from /health so the liveness check stays green while the DB is
+    unconfigured — the app still runs on the in-memory store in this phase. The db
+    import is lazy and guarded so the minimal CI image (no SQLAlchemy installed)
+    still boots and this endpoint degrades to 503 rather than crashing.
+    """
+    try:
+        from app.db.session import db_ping
+
+        ok = db_ping()
+    except Exception:
+        ok = False
+    return JSONResponse(
+        status_code=status.HTTP_200_OK if ok else status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"status": "ok" if ok else "unavailable", "database": ok},
+    )

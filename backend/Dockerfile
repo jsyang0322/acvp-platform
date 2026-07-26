@@ -24,7 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 python3
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 RUN pip3 install --no-cache-dir --break-system-packages \
-    fastapi "uvicorn[standard]" pydantic pydantic-settings pyjwt arq
+    fastapi "uvicorn[standard]" pydantic pydantic-settings pyjwt arq \
+    sqlalchemy "psycopg[binary]" alembic
 COPY app ./app
 COPY docker/backend-entrypoint.sh /usr/local/bin/backend-entrypoint.sh
 RUN chmod +x /usr/local/bin/backend-entrypoint.sh
