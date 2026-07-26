@@ -27,6 +27,10 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     fastapi "uvicorn[standard]" pydantic pydantic-settings pyjwt arq \
     sqlalchemy "psycopg[binary]" alembic
 COPY app ./app
+# Alembic migrations — the entrypoint runs `alembic upgrade head` when DATABASE_URL
+# is set, before the app (and its import-time seed) starts.
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
 COPY docker/backend-entrypoint.sh /usr/local/bin/backend-entrypoint.sh
 RUN chmod +x /usr/local/bin/backend-entrypoint.sh
 ENV USE_NIST_GENVAL=true \

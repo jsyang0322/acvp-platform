@@ -22,3 +22,7 @@ services:
         CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       - USE_NIST_GENVAL=false
+      # Force the in-memory store for the mTLS test: the minimal image ships no
+      # SQLAlchemy, and this layer under test doesn't touch persistence. Empty
+      # overrides the base file's default DATABASE_URL, so no `db` service is needed.
+      - DATABASE_URL=

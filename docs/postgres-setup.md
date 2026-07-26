@@ -1,11 +1,16 @@
 # PostgreSQL setup (containerized — Docker or Podman)
 
 The persistent store runs **PostgreSQL in a container**, with data in a named
-volume — never a local SQLite file and never scattered in the repo. This is the
-first phase of the store migration: the schema, the engine/session layer, and the
-migrations are in place, but the running app **still uses the in-memory store**
-(`app/store.py`). Nothing here changes app behavior yet; it stands the database up
-so the DB-backed store can plug in next.
+volume — never a local SQLite file and never scattered in the repo.
+
+**Store selection is by `DATABASE_URL` (dual-store):** set it and the app uses the
+PostgreSQL-backed `DbStore` (`app/db/db_store.py`); leave it unset and the app uses
+the in-memory `Store` (`app/store.py`) — the default, so dev and the test suite run
+with no database. The `DbStore` is a *write-through mirror* of the in-memory store:
+it exposes the same `TestSession` / `VectorSet` surface, but every attribute read
+queries the row and every write commits it, so all call sites behave identically on
+both backends. `settle()`/`cancel()` take a `SELECT … FOR UPDATE` row lock, so a
+generate/validate thread can't undo a cancel.
 
 Works the same under **Docker** (`docker compose`) and **Podman**
 (`podman compose` / `podman-compose`). Where they differ, both are shown.
@@ -14,10 +19,13 @@ Works the same under **Docker** (`docker compose`) and **Podman**
 
 - `db` service in `docker-compose.yml` (`postgres:16-alpine`) + named volume `pgdata`.
 - SQLAlchemy 2.0 models mirroring the store shapes: `app/db/models.py`.
+- Write-through DB-backed store selected by `DATABASE_URL`: `app/db/db_store.py`.
 - Lazy engine / session factory + a `db_ping()` probe: `app/db/session.py`.
 - Alembic migrations: `backend/alembic/`, config in `backend/alembic.ini`.
 - `DATABASE_URL` / `DB_ECHO` settings: `app/core/config.py`.
 - Readiness endpoint `GET /health/db` (200 up, 503 down/unconfigured).
+- The backend container's entrypoint waits for the DB and runs `alembic upgrade
+  head` before serving (`backend/docker/backend-entrypoint.sh`).
 
 ## 1. Start Postgres
 
@@ -96,10 +104,26 @@ The URL contains a password: keep it in `.env` (gitignored), never in the repo.
 `DATABASE_URL` unset means the app runs on the in-memory store — the default this
 phase, and what the test suite uses.
 
-## Next phase
+## Running the tests against Postgres
 
-Swap the in-memory `Store` for a DB-backed implementation with the same method
-surface (see the `store.py` module docstring), migrate the tests onto a
-transactional session, and add `depends_on: db (service_healthy)` + a migration
-step to the backend container. The models and migrations here are that target
-schema.
+The suite is the faithfulness bar: it must pass on **both** backends. Default runs
+use the in-memory store; set `DATABASE_URL` (with the `db` container up) to run the
+identical suite against PostgreSQL. `conftest.py` drops and recreates the schema
+before the app imports, so each run starts clean.
+
+```bash
+# in-memory (fast, no infra) — the default
+pytest -q
+
+# against Postgres (needs the db container; DATABASE_URL points at the published port)
+DB_HOST_PORT=55432 PROXY_SECRET=x JWT_SECRET=x docker compose up -d --wait db
+DATABASE_URL='postgresql+psycopg://acvp:acvp-dev-only@localhost:55432/acvp' pytest -q
+```
+
+## Later work
+
+- The write-through proxy issues one small query per attribute access — correct but
+  chatty. Batch hot reads (e.g. `disposition()`) if it ever matters at scale.
+- `test_sessions.access_token` is stored in the clear to mirror the in-memory store;
+  hash or encrypt it before this is anything but a prototype ([HUMAN REVIEW]).
+- Point the arq worker (deployment task queue) at the same `DATABASE_URL`.

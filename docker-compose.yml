@@ -33,9 +33,11 @@ services:
       timeout: 5s
       retries: 40
       start_period: 60s # the Orleans silo takes ~20-40s to come up first
-    # NOTE: no `depends_on: db` yet — the app still runs on the in-memory store, so
-    # ordering isn't needed, and the CI mTLS job (`up ... backend proxy`) must not
-    # pull in Postgres. The next phase (DB-backed store) adds the service_healthy gate.
+    # No `depends_on: db` on purpose: the backend entrypoint waits for the database
+    # and runs migrations itself (see docker/backend-entrypoint.sh). That keeps the
+    # CI mTLS job's `up ... backend proxy` from pulling in Postgres, while a full
+    # `docker compose up` still orders correctly. With DATABASE_URL set (default
+    # below) the backend uses the DbStore; unset it to run on the in-memory store.
 
   # PostgreSQL — the persistent store. Data lives in the named `pgdata` volume
   # (not the repo, not a local SQLite file); it survives `down` and is removed only
