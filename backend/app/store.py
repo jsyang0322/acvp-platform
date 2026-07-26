@@ -116,6 +116,8 @@ class TestSession:
     publishable: bool = False
     created_on: str | None = None
     expires_on: str | None = None
+    # One-way hash of the session's accessToken, never the raw token (see
+    # core.auth.hash_access_token). The raw token is disclosed to the client once.
     access_token: str | None = None
     owner: str | None = None    # JWT subject that created it; scopes the listing
     cancelled: bool = False     # spec 12.16.5

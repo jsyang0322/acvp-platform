@@ -37,9 +37,9 @@ class TestSessionRow(Base):
     publishable: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_on: Mapped[str | None] = mapped_column(String, nullable=True)
     expires_on: Mapped[str | None] = mapped_column(String, nullable=True)
-    # Session access token (spec 12.16). Stored to mirror the in-memory store.
-    # [HUMAN REVIEW] this is a credential at rest — revisit hashing/encryption when
-    # the DB-backed store lands.
+    # One-way hash of the session accessToken (core.auth.hash_access_token), not the
+    # raw credential — a DB compromise must not yield a live session token. The token
+    # is verified from its JWT signature, never by looking this up. [HUMAN REVIEW]
     access_token: Mapped[str | None] = mapped_column(String, nullable=True)
     # JWT subject that created the session; scopes the listing (spec 12.16).
     owner: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
