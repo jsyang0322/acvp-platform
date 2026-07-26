@@ -20,6 +20,11 @@ services:
       # Required (fail-closed): set in the shell or a repo-root .env file.
       # Generate: python3 -c "import secrets; print(secrets.token_urlsafe(32))"
       - PROXY_SECRET=${PROXY_SECRET:?PROXY_SECRET is required - see docs/mtls-deployment.md}
+      # PostgreSQL — reaches the `db` service over the compose network. Dev-only
+      # default; override DATABASE_URL / POSTGRES_* in a repo-root .env for deploy.
+      # Inert this phase (the app still uses the in-memory store); wired now so the
+      # next phase — the DB-backed store — needs no compose change.
+      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg://acvp:acvp-dev-only@db:5432/acvp}
     volumes:
       - ./tests/fixtures/nist:/fixtures:ro # golden vectors, read-only (fallback + tests)
     healthcheck:
@@ -28,6 +33,35 @@ services:
       timeout: 5s
       retries: 40
       start_period: 60s # the Orleans silo takes ~20-40s to come up first
+    # No `depends_on: db` on purpose: the backend entrypoint waits for the database
+    # and runs migrations itself (see docker/backend-entrypoint.sh). That keeps the
+    # CI mTLS job's `up ... backend proxy` from pulling in Postgres, while a full
+    # `docker compose up` still orders correctly. With DATABASE_URL set (default
+    # below) the backend uses the DbStore; unset it to run on the in-memory store.
+
+  # PostgreSQL — the persistent store. Data lives in the named `pgdata` volume
+  # (not the repo, not a local SQLite file); it survives `down` and is removed only
+  # by `down -v`. Runs the same under `docker compose` and `podman compose`.
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-acvp}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-acvp-dev-only}
+      - POSTGRES_DB=${POSTGRES_DB:-acvp}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Published on localhost only, for host tooling (alembic / psql / a GUI)
+      # during development. Set DB_HOST_PORT to avoid a clash with a Postgres
+      # already listening on 5432. Drop this whole mapping in a locked-down
+      # deployment — the backend reaches the DB over the internal compose network.
+      - "127.0.0.1:${DB_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-acvp} -d ${POSTGRES_DB:-acvp}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   # ACV Proxy — Nginx TLS termination + mTLS (ACVP spec §4.2 SHALL, §6, §7).
   proxy:
@@ -61,3 +95,8 @@ services:
   #   command: arq app.workers.tasks.WorkerSettings
   #   depends_on:
   #     - redis
+
+# Named volume for the PostgreSQL data directory, managed by Docker/Podman.
+# `docker compose down` keeps it; `docker compose down -v` deletes the data.
+volumes:
+  pgdata:

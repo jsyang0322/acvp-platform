@@ -1,3 +1,4 @@
+import hashlib
 import time
 
 import jwt
@@ -7,6 +8,19 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import get_settings
 
 _bearer = HTTPBearer(auto_error=True)
+
+
+def hash_access_token(token: str) -> str:
+    """One-way digest of a session access token, for storage at rest.
+
+    The token is a high-entropy signed JWT, so a fast digest (SHA-256 — how GitHub
+    stores personal access tokens) is appropriate; the salted slow hashing a
+    low-entropy password needs would buy nothing here. Session access is verified
+    statelessly from the JWT signature (see require_session_access), never by looking
+    the stored value up — so this digest is never compared. It exists only so a
+    database compromise cannot yield a live session bearer token. [HUMAN REVIEW]
+    """
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def create_access_token(subject: str) -> str:

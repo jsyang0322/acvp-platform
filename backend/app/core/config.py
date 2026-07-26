@@ -82,6 +82,18 @@ class Settings(BaseSettings):
     genval_artifact_root: str | None = None
     genval_timeout_seconds: int = 120
 
+    # --- Database (PostgreSQL) --------------------------------------------------
+    # SQLAlchemy URL for the persistent store (psycopg v3 sync driver):
+    #   postgresql+psycopg://user:password@host:5432/dbname
+    # None (default) means "not configured" — the in-memory store still backs the
+    # app in this phase, so the server and the test suite run without Postgres.
+    # In Docker/Podman the host is the `db` service; from the host it is localhost
+    # (the container's published port). Contains a password — keep it in .env,
+    # never in the repo (see .env.example). [HUMAN REVIEW] connection secret.
+    database_url: str | None = None
+    # Echo SQL to the logs. Debugging only — may log data; never enable in prod.
+    db_echo: bool = False
+
     @model_validator(mode="after")
     def _fail_closed_secrets(self) -> "Settings":
         """Refuse to start with unusable secrets (fail-closed, never fail-open).

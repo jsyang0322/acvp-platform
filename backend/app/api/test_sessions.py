@@ -4,7 +4,12 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Response, status
 from pydantic import ValidationError
 
 from app.core import refs
-from app.core.auth import create_access_token, current_subject, require_session_access
+from app.core.auth import (
+    create_access_token,
+    current_subject,
+    hash_access_token,
+    require_session_access,
+)
 from app.core.config import get_settings
 from app.core.jobs import run_background, submit
 from app.crypto_boundary import client
@@ -124,8 +129,11 @@ def create_test_session(body: list = Body(...), subject: str = Depends(current_s
     now = datetime.now(timezone.utc)
     session.created_on = _iso(now)
     session.expires_on = _iso(now + timedelta(seconds=get_settings().session_expire_seconds))
-    # Per-session JWT credential (HS256). [HUMAN REVIEW]
-    session.access_token = create_access_token(f"session:{session.session_id}")
+    # Per-session JWT credential (HS256), disclosed to the client once (below) and
+    # verified thereafter from its signature, never by lookup. So persist only a
+    # one-way hash — a DB compromise must not yield a live session token. [HUMAN REVIEW]
+    session_token = create_access_token(f"session:{session.session_id}")
+    session.access_token = hash_access_token(session_token)
 
     for algo in payload.get("algorithms", []):
         try:
@@ -151,7 +159,7 @@ def create_test_session(body: list = Body(...), subject: str = Depends(current_s
                 f"/acvp/v1/testSessions/{session.session_id}/vectorSets/{v.vs_id}"
                 for v in session.vector_sets
             ],
-            "accessToken": session.access_token,
+            "accessToken": session_token,
         }
     )
 

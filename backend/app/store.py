@@ -116,6 +116,8 @@ class TestSession:
     publishable: bool = False
     created_on: str | None = None
     expires_on: str | None = None
+    # One-way hash of the session's accessToken, never the raw token (see
+    # core.auth.hash_access_token). The raw token is disclosed to the client once.
     access_token: str | None = None
     owner: str | None = None    # JWT subject that created it; scopes the listing
     cancelled: bool = False     # spec 12.16.5
@@ -237,4 +239,21 @@ class Store:
         return self._validations.get(vid)
 
 
-store = Store()
+def _make_store():
+    """Pick the persistence backend at startup.
+
+    DATABASE_URL set → PostgreSQL (DbStore, a write-through mirror of this Store);
+    otherwise the in-memory Store — the default, so dev and the test suite run with
+    no database. The DbStore import is lazy on purpose: the in-memory path must
+    never import SQLAlchemy (the minimal CI image ships without it).
+    """
+    from app.core.config import get_settings
+
+    if get_settings().database_url:
+        from app.db.db_store import DbStore
+
+        return DbStore()
+    return Store()
+
+
+store = _make_store()
