@@ -78,9 +78,9 @@ function SubmitCard({ url, session }: { url: string; session: SessionObject }) {
         {ready && !submitted && (
           <div className="field">
             <label>Submission Mode</label>
-            <div className="seg" style={{ marginBottom: 12 }}>
-              <button className={!useUpload ? "on" : ""} onClick={() => setUseUpload(false)}>Mock Auto-generate</button>
-              <button className={useUpload ? "on" : ""} onClick={() => setUseUpload(true)}>Upload response.json</button>
+            <div className="seg" role="group" aria-label="Submission mode" style={{ marginBottom: 12 }}>
+              <button className={!useUpload ? "on" : ""} aria-pressed={!useUpload} onClick={() => setUseUpload(false)}>Auto-fill (demo)</button>
+              <button className={useUpload ? "on" : ""} aria-pressed={useUpload} onClick={() => setUseUpload(true)}>Upload response.json</button>
             </div>
             {useUpload && (
               <div className="stack" style={{ marginTop: 8 }}>

@@ -57,6 +57,7 @@ export function Configure({ loginToken, existing, history = [], onLoadSession, o
               {fam.modes.map((mode) => (
                 <button key={mode} type="button"
                   className={`chip ${modes.includes(mode) ? "on" : ""}`}
+                  aria-pressed={modes.includes(mode)}
                   onClick={() => toggle(modes, setModes, mode)}>{mode}</button>
               ))}
             </div>
@@ -67,15 +68,16 @@ export function Configure({ loginToken, existing, history = [], onLoadSession, o
               {fam.paramSets.map((p) => (
                 <button key={p} type="button"
                   className={`chip ${params.includes(p) ? "on" : ""}`}
+                  aria-pressed={params.includes(p)}
                   onClick={() => toggle(params, setParams, p)}>{p}</button>
               ))}
             </div>
           </Field>
 
           <Field label="Session type" hint="Sample sessions can download the expected answer key; they are not certifiable">
-            <div className="seg">
-              <button className={isSample ? "on" : ""} onClick={() => setIsSample(true)}>Sample</button>
-              <button className={!isSample ? "on" : ""} onClick={() => setIsSample(false)}>Production</button>
+            <div className="seg" role="group" aria-label="Session type">
+              <button className={isSample ? "on" : ""} aria-pressed={isSample} onClick={() => setIsSample(true)}>Sample</button>
+              <button className={!isSample ? "on" : ""} aria-pressed={!isSample} onClick={() => setIsSample(false)}>Production</button>
             </div>
           </Field>
 
@@ -128,41 +130,31 @@ export function Configure({ loginToken, existing, history = [], onLoadSession, o
         <div className="card">
           <div className="card-h">
             <div>
-              <h2>Session History</h2>
-              <div className="desc">Created in the current tab session</div>
+              <h2>Session history</h2>
+              <div className="desc">Sessions created in this browser tab</div>
             </div>
           </div>
-          <div className="card-b stack" style={{ maxHeight: "320px", overflowY: "auto" }}>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          <div className="card-b" style={{ maxHeight: 320, overflowY: "auto" }}>
+            <ul className="list">
               {history.map((h) => {
                 const sId = idFromUrl(h.url);
                 const isCurrent = existing && idFromUrl(existing.url) === sId;
                 return (
-                  <li key={h.url} style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "8px 0",
-                    borderBottom: "1px solid #2d3047"
-                  }}>
+                  <li key={h.url} className="list-row">
                     <div>
-                      <span className="mono" style={{ fontWeight: "bold", color: "#e1e3f0" }}>#{sId}</span>
+                      <span className="row-id">#{sId}</span>
                       <span className="badge muted" style={{ marginLeft: 8 }}>
                         {h.isSample ? "sample" : "production"}
                       </span>
-                      <div style={{ fontSize: "11px", color: "#6c729c", marginTop: 2 }}>
-                        Created: {h.createdOn.slice(11, 19)}
-                      </div>
+                      <div className="row-sub">Created {h.createdOn.slice(11, 19)}</div>
                     </div>
-                    <div>
-                      {isCurrent ? (
-                        <span className="badge ok">active</span>
-                      ) : (
-                        <Button variant="soft" onClick={() => onLoadSession(h)} style={{ padding: "4px 8px", fontSize: "12px", minHeight: 0 }}>
-                          Resume
-                        </Button>
-                      )}
-                    </div>
+                    {isCurrent ? (
+                      <span className="badge ok">active</span>
+                    ) : (
+                      <Button variant="soft" className="btn-sm" onClick={() => onLoadSession(h)}>
+                        Resume
+                      </Button>
+                    )}
                   </li>
                 );
               })}

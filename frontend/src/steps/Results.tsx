@@ -141,25 +141,27 @@ ${s.results.map((r) => {
             ) : <span className="badge muted">loading</span>}
           </div>
         </div>
-        <div className="card-b" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div className="panels-3">
-            {(s?.results ?? []).map((row) => (
-              <div key={row.vectorSetUrl} className="stat">
-                <div className="lab">vector set #{idFromUrl(row.vectorSetUrl)}</div>
-                <div style={{ marginTop: 8 }}><StatusBadge status={row.status} /></div>
-              </div>
-            ))}
-          </div>
-          {s && (
-            <div className="btn-row" style={{ borderTop: "1px solid #2d3047", paddingTop: "12px", gap: "12px" }}>
-              <span style={{ fontSize: "13px", alignSelf: "center", color: "#b9bdda" }}>Reports:</span>
-              <Button variant="soft" onClick={handleExportMarkdown} style={{ padding: "6px 12px", fontSize: "12px", minHeight: 0 }}>
-                Download Markdown Report
-              </Button>
-              <Button variant="soft" onClick={handleExportJson} style={{ padding: "6px 12px", fontSize: "12px", minHeight: 0 }}>
-                Download JSON Summary
-              </Button>
+        <div className="card-b stack">
+          {!s ? (
+            <div className="panels-3" aria-busy="true">
+              {[0, 1, 2].map((i) => <div key={i} className="skeleton" />)}
             </div>
+          ) : (
+            <>
+              <div className="panels-3">
+                {s.results.map((row) => (
+                  <div key={row.vectorSetUrl} className="stat">
+                    <div className="lab">vector set #{idFromUrl(row.vectorSetUrl)}</div>
+                    <div style={{ marginTop: 8 }}><StatusBadge status={row.status} /></div>
+                  </div>
+                ))}
+              </div>
+              <div className="report-bar">
+                <span className="report-label">Reports</span>
+                <Button variant="soft" className="btn-sm" onClick={handleExportMarkdown}>Download Markdown report</Button>
+                <Button variant="soft" className="btn-sm" onClick={handleExportJson}>Download JSON summary</Button>
+              </div>
+            </>
           )}
         </div>
       </div>
