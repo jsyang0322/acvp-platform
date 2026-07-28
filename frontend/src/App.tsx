@@ -21,7 +21,7 @@ const STEPS = [
 function StatStrip({ loginToken, session }: { loginToken: string | null; session: SessionObject | null }) {
   return (
     <div className="statstrip">
-      <div className={`stat ${loginToken ? "" : ""}`}>
+      <div className="stat">
         <div className="lab">Authentication</div>
         <div className="val sm">{loginToken ? "Signed in" : "Signed out"}</div>
         <div className="meta">{loginToken ? "JWT · HS256" : "Sign in to begin"}</div>
@@ -131,8 +131,7 @@ export default function App() {
         <div className="spacer" />
         {loginToken && (
           <button
-            className="btn btn-ghost"
-            style={{ padding: "6px 12px", fontSize: "12px", marginRight: "10px", color: "#b9bdda" }}
+            className="btn btn-ghost btn-topbar"
             onClick={() => {
               setLoginToken(null);
               setSession(null);
@@ -140,7 +139,7 @@ export default function App() {
               setSessionHistory([]);
             }}
           >
-            Reset Session / Sign Out
+            Reset session / Sign out
           </button>
         )}
         {session ? (
@@ -158,7 +157,17 @@ export default function App() {
               <li
                 key={s.key}
                 className={`step ${step === i ? "active" : ""} ${done(i) ? "done" : ""} ${unlocked(i) ? "" : "locked"}`}
+                role="button"
+                tabIndex={unlocked(i) ? 0 : -1}
+                aria-current={step === i ? "step" : undefined}
+                aria-disabled={!unlocked(i)}
                 onClick={() => unlocked(i) && setStep(i)}
+                onKeyDown={(e) => {
+                  if ((e.key === "Enter" || e.key === " ") && unlocked(i)) {
+                    e.preventDefault();
+                    setStep(i);
+                  }
+                }}
               >
                 <span className="dot">{done(i) ? "✓" : i + 1}</span>
                 <div>
@@ -175,21 +184,9 @@ export default function App() {
 
           {sessionNotification && (
             <Notice kind="err">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div className="notice-row">
                 <span>{sessionNotification}</span>
-                <button
-                  className="btn btn-ghost"
-                  style={{
-                    padding: "2px 8px",
-                    fontSize: "11px",
-                    color: "inherit",
-                    minHeight: 0,
-                    border: "1px solid currentColor",
-                    borderRadius: "4px",
-                    cursor: "pointer"
-                  }}
-                  onClick={() => setSessionNotification(null)}
-                >
+                <button className="btn-dismiss" onClick={() => setSessionNotification(null)}>
                   Dismiss
                 </button>
               </div>

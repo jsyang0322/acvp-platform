@@ -144,8 +144,8 @@ Request Tracker URL: ${requestUrl}
                   <dt>approvedUrl</dt><dd>{validation}</dd>
                 </dl>
                 <div className="btn-row" style={{ marginTop: 8 }}>
-                  <Button variant="soft" onClick={handleExportMarkdown} style={{ padding: "6px 12px", fontSize: "12px", minHeight: 0 }}>
-                    Download Certificate Report
+                  <Button variant="soft" className="btn-sm" onClick={handleExportMarkdown}>
+                    Download certificate report
                   </Button>
                 </div>
               </>
