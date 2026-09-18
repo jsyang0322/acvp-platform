@@ -7,7 +7,7 @@ Maps this platform's behaviour to the ACVP specification, against **both** sourc
 
 Pinned to ACVP **1.0**. Legend: ✅ conformant · ⏳ deferred (reason given) · normative level per spec (MUST/SHALL/SHOULD/RECOMMENDED/MAY).
 
-Every row is backed by a pytest in `backend/tests/`. Run `pytest -q` (currently **92 passed**).
+Every row is backed by a pytest in `backend/tests/`. Run `pytest -q` (currently **200 passed, 6 skipped**).
 
 ---
 
